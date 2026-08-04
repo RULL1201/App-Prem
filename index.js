@@ -255,7 +255,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
         // LOGIK PERINTAH ALIGHT MOTION (KHUSUS PREMIUM)
         // -----------------------------------------------------
         if (command === 'am') {
-            if (!isPremium) return reply('❌ *Akses Ditolak!*\nFitur ini khusus pengguna Premium. Silakan hubungi Owner untuk mendaftar.');
+            if (!isPremium) return reply('❌ *Akses Ditolak!*\nFitur ini khusus pengguna Premium. Silakan hubungi Owner untuk mendaftar. wa.me/6289676153775');
             
             const sub = args[1]?.toLowerCase();
 
