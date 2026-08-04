@@ -1,7 +1,7 @@
 {
   "name": "bot-am",
   "version": "1.0.0",
-  "description": "",
+  "description": "Bot WhatsApp Alight Motion",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -13,6 +13,7 @@
   "type": "commonjs",
   "dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "express": "^4.19.2",
     "pino": "^10.3.1"
   }
 }
