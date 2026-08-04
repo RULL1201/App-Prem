@@ -8,8 +8,8 @@ const APIKEY = 'freeapikeydhan26';
 
 // ---------------------------------------------------------
 // KONFIGURASI NOMOR
-const ownerNumber = '6289676153775'; // Cukup masukkan angkanya saja tanpa @s.whatsapp.net
-const botPhoneNumber = '6285286080147'; // Nomor WhatsApp bot Anda (Awali dengan 62)
+const ownerNumber = '6289676153775'; // Nomor Owner (angka saja)
+const botPhoneNumber = '6285286080147'; // Nomor Bot (angka saja, diawali 62)
 // ---------------------------------------------------------
 
 // Load Data Premium dengan aman
@@ -81,22 +81,24 @@ async function startBot() {
         const prefix = '.';
         if (!text.startsWith(prefix)) return;
 
-        // --- SISTEM PEMBERSIHAN PENGIRIM (ANTI GAGAL OWNER) ---
+        // --- SISTEM PEMBERSIHAN & DEBUG PENGIRIM ---
         let rawSender = msg.key.participant || msg.key.remoteJid || "";
         if (msg.key.fromMe && sock.user && sock.user.id) {
             rawSender = sock.user.id;
         }
         
-        // Ambil murni angkanya saja (mengabaikan @s.whatsapp.net, :device_id, dll)
         const senderNumber = rawSender.replace(/[^0-9]/g, '');
         const senderJid = senderNumber + '@s.whatsapp.net';
         const cleanOwner = ownerNumber.replace(/[^0-9]/g, '');
 
+        // Cetak debug ke terminal Railway
+        console.log(`[DEBUG CHAT] Terdeteksi pengirim bernomor: ${senderNumber} | Owner diset: ${cleanOwner}`);
+
         const args = text.slice(prefix.length).trim().split(/\s+/);
         const command = args[0]?.toLowerCase();
 
-        // Cek status owner berdasarkan kecocokan angka
-        const isOwner = senderNumber === cleanOwner;
+        // Cek owner dengan metode fleksibel (mengandung nomor owner)
+        const isOwner = senderNumber.includes(cleanOwner) || cleanOwner.includes(senderNumber);
         const isPremium = isOwner || premiumUsers.includes(senderJid);
 
         const reply = (textReply) => sock.sendMessage(msg.key.remoteJid, { text: textReply }, { quoted: msg });
@@ -122,7 +124,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
 
         // FITUR TAMBAH PREMIUM (KHUSUS OWNER)
         if (command === 'addprem') {
-            if (!isOwner) return reply('❌ Perintah ini khusus Owner bot!');
+            if (!isOwner) return reply(`❌ Akses ditolak! Nomor Anda terbaca: ${senderNumber}`);
             const target = args[1];
             if (!target) return reply('❌ Masukkan nomor target!\nContoh: `.addprem 6281234567890`');
             
@@ -138,7 +140,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
 
         // FITUR HAPUS PREMIUM (KHUSUS OWNER)
         if (command === 'delprem') {
-            if (!isOwner) return reply('❌ Perintah ini khusus Owner bot!');
+            if (!isOwner) return reply(`❌ Akses ditolak! Nomor Anda terbaca: ${senderNumber}`);
             const target = args[1];
             if (!target) return reply('❌ Masukkan nomor target!\nContoh: `.delprem 6281234567890`');
             
