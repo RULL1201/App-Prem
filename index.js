@@ -1,6 +1,5 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
-const readline = require('readline');
 const fs = require('fs');
 
 // Konfigurasi API
@@ -8,7 +7,9 @@ const API = 'https://restapidhan.vercel.app';
 const APIKEY = 'freeapikeydhan26';
 
 // ---------------------------------------------------------
+// NOMOR OWNER & NOMOR BOT UNTUK PAIRING OTOMATIS DI CLOUD
 const ownerNumber = '6289676153775@s.whatsapp.net'; 
+const botPhoneNumber = '6285286080147'; // <-- Ganti dengan nomor WhatsApp bot Anda (Awali dengan 62 tanpa tanda +)
 // ---------------------------------------------------------
 
 // Load Data Premium dengan aman
@@ -28,9 +29,6 @@ if (fs.existsSync(premFile)) {
 
 const emailCache = {};
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-const question = (text) => new Promise((resolve) => rl.question(text, resolve));
-
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('sesi_bot');
 
@@ -41,11 +39,24 @@ async function startBot() {
         browser: ['Ubuntu', 'Chrome', '20.0.04'] 
     });
 
+    // Proses Pairing Code Otomatis untuk Cloud (Railway/Koyeb)
     if (!sock.authState.creds.registered) {
-        console.log('--- SETUP PAIRING CODE ---');
-        const phoneNumber = await question('Masukkan nomor WhatsApp bot (contoh: 6281234567890): ');
-        const code = await sock.requestPairingCode(phoneNumber);
-        console.log(`\nSilakan masukkan kode ini di notifikasi WhatsApp Anda: \n=> ${code} <=\n`);
+        setTimeout(async () => {
+            try {
+                let cleanedPhone = botPhoneNumber.replace(/[^0-9]/g, '');
+                if (!cleanedPhone || cleanedPhone.length < 10) {
+                    console.log('❌ PERINGATAN: Harap masukkan nomor bot yang valid di variabel botPhoneNumber!');
+                    return;
+                }
+                console.log(`--- MEMINTA PAIRING CODE UNTUK NOMOR: ${cleanedPhone} ---`);
+                const code = await sock.requestPairingCode(cleanedPhone);
+                console.log(`\n========================================`);
+                console.log(`=> KODE PAIRING ANDA: ${code} <=`);
+                console.log(`========================================\n`);
+            } catch (err) {
+                console.log('Gagal meminta pairing code:', err);
+            }
+        }, 3000);
     }
 
     sock.ev.on('connection.update', (update) => {
@@ -55,7 +66,7 @@ async function startBot() {
             console.log('Koneksi terputus, mencoba menghubungkan kembali...', shouldReconnect);
             if (shouldReconnect) startBot();
         } else if (connection === 'open') {
-            console.log('✅ Bot WhatsApp Berhasil Terhubung!');
+            console.log('✅ Bot WhatsApp Berhasil Terhubung di Cloud!');
         }
     });
 
@@ -70,14 +81,9 @@ async function startBot() {
         const prefix = '.';
         if (!text.startsWith(prefix)) return;
 
-        // --- SISTEM PEMBACAAN NOMOR YANG LEBIH AKURAT ---
-        // Jika bot chat ke dirinya sendiri (fromMe), gunakan JID bot. Jika tidak, gunakan JID pengirim.
         let rawSender = msg.key.fromMe ? sock.user.id : (msg.key.participant || msg.key.remoteJid);
-        
-        // Bersihkan ID Perangkat (:1, :2, dsb)
         const sender = rawSender.includes(':') ? rawSender.split(':')[0] + '@s.whatsapp.net' : rawSender;
-        // ------------------------------------------------
-
+        
         const args = text.slice(prefix.length).trim().split(/\s+/);
         const command = args[0]?.toLowerCase();
 
@@ -105,11 +111,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
         }
 
         if (command === 'addprem') {
-            // JIKA GAGAL, BOT AKAN MEMBERITAHU NOMOR APA YANG DIA BACA
-            if (!isOwner) {
-                return reply(`❌ *Gagal! Anda bukan Owner.*\n\n🔍 *Cek Sistem:*\nNomor Anda terdeteksi sebagai:\n👉 *${sender}*\n\nSedangkan Owner disetting ke:\n👉 *${ownerNumber}*\n\n_(Samakan tulisan ownerNumber di kode dengan nomor yang terdeteksi di atas)_`);
-            }
-            
+            if (!isOwner) return reply('❌ Perintah ini khusus Owner bot!');
             const target = args[1];
             if (!target) return reply('❌ Masukkan nomor target!\nContoh: `.addprem 6281234567890`');
             
