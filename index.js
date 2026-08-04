@@ -3,9 +3,12 @@ const pino = require('pino');
 const fs = require('fs');
 const express = require('express'); // Modul untuk web server
 
-// Konfigurasi API
+// Konfigurasi API Alight Motion
 const API = 'https://restapidhan.vercel.app';
 const APIKEY = 'freeapikeydhan26';
+
+// Konfigurasi API JereXD (Downloader)
+const apiKeyJere = 'jere_XXxlEihAWirf';
 
 // ---------------------------------------------------------
 // KONFIGURASI NOMOR & ID
@@ -65,7 +68,7 @@ async function startBot() {
             } catch (err) {
                 console.log('Gagal meminta pairing code:', err);
             }
-        }, 4000); // Jeda 4 detik agar sistem stabil sebelum meminta kode
+        }, 4000); 
     }
 
     sock.ev.on('connection.update', (update) => {
@@ -110,7 +113,7 @@ async function startBot() {
 
         // TAMPILAN MENU UTAMA
         if (command === 'menu') {
-            const menuText = `╭─「 🤖 *BOT ALIGHT MOTION* 」
+            const menuText = `╭─「 🤖 *BOT RULZZ CYNTAXX* 」
 │
 ├ 👤 *Status:* ${isOwner ? 'Owner 👑' : (isPremium ? 'Premium 🌟' : 'Free User 👤')}
 ├ ⚡ *Prefix:* [ ${prefix} ]
@@ -119,6 +122,10 @@ async function startBot() {
 │ ⬡ *.am send <email>*
 │ ⬡ *.am verif <url>*
 │ ⬡ *.am cancel*
+│
+├─「 📥 *MENU DOWNLOADER* 」
+│ ⬡ *.tt <link tiktok>*
+│ ⬡ *.ig <link instagram>*
 │
 ${isOwner ? `├─「 👑 *MENU OWNER* 」
 │ ⬡ *.addprem <nomor>*
@@ -159,7 +166,94 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
             return reply(`✅ Sukses menghapus *${target}* dari daftar Premium.`);
         }
 
+        // -----------------------------------------------------
+        // FITUR TIKTOK DOWNLOADER
+        // -----------------------------------------------------
+        if (command === 'tt' || command === 'tiktok') {
+            const url = args[1];
+            if (!url || !url.includes('tiktok.com')) {
+                return reply('❌ *Format salah!*\nContoh: `.tt https://vt.tiktok.com/ZS4PsYnUu/`');
+            }
+
+            reply('⏳ *Sedang memproses video TikTok, tunggu sebentar...*');
+
+            try {
+                const apiUrl = `https://api.jerexd.my.id/api/downloader/tiktok?apikey=${apiKeyJere}&url=${encodeURIComponent(url)}`;
+                const res = await fetch(apiUrl);
+                const data = await res.json();
+
+                if (data.status && data.result) {
+                    let videoUrl = data.result.nowm || data.result.url || data.result.video || (data.result.media && data.result.media[0]);
+                    let title = data.result.title || data.result.desc || 'TikTok Video';
+
+                    if (videoUrl) {
+                        await sock.sendMessage(msg.key.remoteJid, { 
+                            video: { url: videoUrl }, 
+                            caption: `📦 *TIKTOK DOWNLOADER*\n\n📝 *Deskripsi:* ${title}` 
+                        }, { quoted: msg });
+                    } else {
+                        reply(`❌ *Gagal!* API tidak mengembalikan link video yang valid.`);
+                    }
+                } else {
+                    reply(`❌ *Gagal!* ${data.message || 'API sedang gangguan.'}`);
+                }
+            } catch (err) {
+                console.log('Error TikTok:', err);
+                reply('❌ Terjadi kesalahan saat memproses permintaan TikTok.');
+            }
+        }
+
+        // -----------------------------------------------------
+        // FITUR INSTAGRAM DOWNLOADER
+        // -----------------------------------------------------
+        if (command === 'ig' || command === 'instagram') {
+            const url = args[1];
+            if (!url || !url.includes('instagram.com')) {
+                return reply('❌ *Format salah!*\nContoh: `.ig https://www.instagram.com/reel/Da8UfeQh2xg/`');
+            }
+
+            reply('⏳ *Sedang memproses link Instagram, tunggu sebentar...*');
+
+            try {
+                const apiUrl = `https://api.jerexd.my.id/api/downloader/instagram?apikey=${apiKeyJere}`;
+                
+                // Gunakan POST sesuai standar API
+                const res = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url }) 
+                });
+                
+                const data = await res.json();
+
+                if (data.status && data.result) {
+                    let mediaArray = Array.isArray(data.result) ? data.result : [data.result];
+                    
+                    for (let media of mediaArray) {
+                        let mediaUrl = media.url || media.video || media;
+                        
+                        if (typeof mediaUrl === 'string') {
+                            if (mediaUrl.includes('.jpg') || mediaUrl.includes('.jpeg') || mediaUrl.includes('.webp')) {
+                                await sock.sendMessage(msg.key.remoteJid, { image: { url: mediaUrl } }, { quoted: msg });
+                            } else {
+                                await sock.sendMessage(msg.key.remoteJid, { video: { url: mediaUrl } }, { quoted: msg }).catch(async () => {
+                                    await sock.sendMessage(msg.key.remoteJid, { image: { url: mediaUrl } }, { quoted: msg });
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    reply(`❌ *Gagal!* ${data.message || 'API sedang gangguan atau link private.'}`);
+                }
+            } catch (err) {
+                console.log('Error Instagram:', err);
+                reply('❌ Terjadi kesalahan saat memproses permintaan Instagram.');
+            }
+        }
+
+        // -----------------------------------------------------
         // LOGIK PERINTAH ALIGHT MOTION (KHUSUS PREMIUM)
+        // -----------------------------------------------------
         if (command === 'am') {
             if (!isPremium) return reply('❌ *Akses Ditolak!*\nFitur ini khusus pengguna Premium. Silakan hubungi Owner untuk mendaftar.');
             
