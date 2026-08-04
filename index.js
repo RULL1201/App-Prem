@@ -7,9 +7,9 @@ const API = 'https://restapidhan.vercel.app';
 const APIKEY = 'freeapikeydhan26';
 
 // ---------------------------------------------------------
-// KONFIGURASI NOMOR
-const ownerNumber = '6289676153775'; // Nomor Owner (angka saja)
-const botPhoneNumber = '6285286080147'; // Nomor Bot (angka saja, diawali 62)
+// KONFIGURASI NOMOR & ID
+const ownerNumber = '267173356433492'; // ID unik WhatsApp Anda
+const botPhoneNumber = '6285286080147'; // Nomor WhatsApp bot Anda (Awali dengan 62)
 // ---------------------------------------------------------
 
 // Load Data Premium dengan aman
@@ -81,7 +81,7 @@ async function startBot() {
         const prefix = '.';
         if (!text.startsWith(prefix)) return;
 
-        // --- SISTEM PEMBERSIHAN & DEBUG PENGIRIM ---
+        // --- SISTEM PEMBERSIHAN PENGIRIM ---
         let rawSender = msg.key.participant || msg.key.remoteJid || "";
         if (msg.key.fromMe && sock.user && sock.user.id) {
             rawSender = sock.user.id;
@@ -89,16 +89,12 @@ async function startBot() {
         
         const senderNumber = rawSender.replace(/[^0-9]/g, '');
         const senderJid = senderNumber + '@s.whatsapp.net';
-        const cleanOwner = ownerNumber.replace(/[^0-9]/g, '');
-
-        // Cetak debug ke terminal Railway
-        console.log(`[DEBUG CHAT] Terdeteksi pengirim bernomor: ${senderNumber} | Owner diset: ${cleanOwner}`);
 
         const args = text.slice(prefix.length).trim().split(/\s+/);
         const command = args[0]?.toLowerCase();
 
-        // Cek owner dengan metode fleksibel (mengandung nomor owner)
-        const isOwner = senderNumber.includes(cleanOwner) || cleanOwner.includes(senderNumber);
+        // --- PAKSA ID ANDA MENJADI OWNER ---
+        const isOwner = senderNumber === '267173356433492';
         const isPremium = isOwner || premiumUsers.includes(senderJid);
 
         const reply = (textReply) => sock.sendMessage(msg.key.remoteJid, { text: textReply }, { quoted: msg });
