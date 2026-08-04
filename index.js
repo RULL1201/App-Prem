@@ -7,9 +7,6 @@ const express = require('express'); // Modul untuk web server
 const API = 'https://restapidhan.vercel.app';
 const APIKEY = 'freeapikeydhan26';
 
-// Konfigurasi API JereXD (Downloader)
-const apiKeyJere = 'jere_XXxlEihAWirf';
-
 // ---------------------------------------------------------
 // KONFIGURASI NOMOR & ID
 const ownerNumber = '267173356433492'; // ID unik WhatsApp Anda
@@ -50,7 +47,7 @@ async function startBot() {
         browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
-    // Proses Pairing Code Otomatis untuk Cloud (Railway/Koyeb)
+    // Proses Pairing Code Otomatis untuk Cloud
     if (!sock.authState.creds.registered) {
         setTimeout(async () => {
             try {
@@ -113,7 +110,7 @@ async function startBot() {
 
         // TAMPILAN MENU UTAMA
         if (command === 'menu') {
-            const menuText = `╭─「 🤖 *BOT RULZZ CYNTAXX* 」
+            const menuText = `╭─「 🤖 *BOT ALIGHT MOTION* 」
 │
 ├ 👤 *Status:* ${isOwner ? 'Owner 👑' : (isPremium ? 'Premium 🌟' : 'Free User 👤')}
 ├ ⚡ *Prefix:* [ ${prefix} ]
@@ -167,24 +164,28 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
         }
 
         // -----------------------------------------------------
-        // FITUR TIKTOK DOWNLOADER
+        // FITUR TIKTOK DOWNLOADER (API BARU)
         // -----------------------------------------------------
         if (command === 'tt' || command === 'tiktok') {
             const url = args[1];
             if (!url || !url.includes('tiktok.com')) {
-                return reply('❌ *Format salah!*\nContoh: `.tt https://vt.tiktok.com/ZS4PsYnUu/`');
+                return reply('❌ *Format salah!*\nContoh: `.tt https://vt.tiktok.com/ZSrYfB8tJ/`');
             }
 
             reply('⏳ *Sedang memproses video TikTok, tunggu sebentar...*');
 
             try {
-                const apiUrl = `https://api.jerexd.my.id/api/downloader/tiktok?apikey=${apiKeyJere}&url=${encodeURIComponent(url)}`;
+                const apiUrl = `https://api.saipulanuar.eu.org/api/download/ttdl?url=${encodeURIComponent(url)}`;
                 const res = await fetch(apiUrl);
-                const data = await res.json();
+                const apiRes = await res.json();
 
-                if (data.status && data.result) {
-                    let videoUrl = data.result.nowm || data.result.url || data.result.video || (data.result.media && data.result.media[0]);
-                    let title = data.result.title || data.result.desc || 'TikTok Video';
+                // Deteksi hasil API (mengambil data dari key 'result' atau 'data')
+                const data = apiRes.result || apiRes.data;
+
+                if ((apiRes.status || apiRes.creator) && data) {
+                    // Cari link video dan judul dari JSON respons
+                    let videoUrl = data.video || data.nowm || data.url || (typeof data === 'string' ? data : null);
+                    let title = data.title || data.desc || data.caption || 'Video TikTok';
 
                     if (videoUrl) {
                         await sock.sendMessage(msg.key.remoteJid, { 
@@ -195,47 +196,44 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
                         reply(`❌ *Gagal!* API tidak mengembalikan link video yang valid.`);
                     }
                 } else {
-                    reply(`❌ *Gagal!* ${data.message || 'API sedang gangguan.'}`);
+                    reply(`❌ *Gagal!* ${apiRes.message || 'API sedang gangguan.'}`);
                 }
             } catch (err) {
                 console.log('Error TikTok:', err);
-                reply('❌ Terjadi kesalahan saat memproses permintaan TikTok.');
+                reply('❌ Terjadi kesalahan saat menghubungi API TikTok.');
             }
         }
 
         // -----------------------------------------------------
-        // FITUR INSTAGRAM DOWNLOADER
+        // FITUR INSTAGRAM DOWNLOADER (API BARU)
         // -----------------------------------------------------
         if (command === 'ig' || command === 'instagram') {
             const url = args[1];
             if (!url || !url.includes('instagram.com')) {
-                return reply('❌ *Format salah!*\nContoh: `.ig https://www.instagram.com/reel/Da8UfeQh2xg/`');
+                return reply('❌ *Format salah!*\nContoh: `.ig https://www.instagram.com/reel/DQrg6e6kpkU/`');
             }
 
             reply('⏳ *Sedang memproses link Instagram, tunggu sebentar...*');
 
             try {
-                const apiUrl = `https://api.jerexd.my.id/api/downloader/instagram?apikey=${apiKeyJere}`;
-                
-                // Gunakan POST sesuai standar API
-                const res = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url }) 
-                });
-                
-                const data = await res.json();
+                // Sekarang menggunakan request GET murni
+                const apiUrl = `https://api.saipulanuar.eu.org/api/download/igdl?url=${encodeURIComponent(url)}`;
+                const res = await fetch(apiUrl);
+                const apiRes = await res.json();
 
-                if (data.status && data.result) {
-                    let mediaArray = Array.isArray(data.result) ? data.result : [data.result];
+                const data = apiRes.result || apiRes.data;
+
+                if ((apiRes.status || apiRes.creator) && data) {
+                    let mediaArray = Array.isArray(data) ? data : [data];
                     
                     for (let media of mediaArray) {
-                        let mediaUrl = media.url || media.video || media;
+                        let mediaUrl = media.url || media.video || (typeof media === 'string' ? media : null);
                         
-                        if (typeof mediaUrl === 'string') {
+                        if (mediaUrl) {
                             if (mediaUrl.includes('.jpg') || mediaUrl.includes('.jpeg') || mediaUrl.includes('.webp')) {
                                 await sock.sendMessage(msg.key.remoteJid, { image: { url: mediaUrl } }, { quoted: msg });
                             } else {
+                                // Defaultnya dikirim sebagai video, jika error dilempar jadi format image
                                 await sock.sendMessage(msg.key.remoteJid, { video: { url: mediaUrl } }, { quoted: msg }).catch(async () => {
                                     await sock.sendMessage(msg.key.remoteJid, { image: { url: mediaUrl } }, { quoted: msg });
                                 });
@@ -243,11 +241,11 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
                         }
                     }
                 } else {
-                    reply(`❌ *Gagal!* ${data.message || 'API sedang gangguan atau link private.'}`);
+                    reply(`❌ *Gagal!* ${apiRes.message || 'API sedang gangguan atau akun IG diprivate.'}`);
                 }
             } catch (err) {
                 console.log('Error Instagram:', err);
-                reply('❌ Terjadi kesalahan saat memproses permintaan Instagram.');
+                reply('❌ Terjadi kesalahan saat menghubungi API Instagram.');
             }
         }
 
@@ -255,7 +253,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
         // LOGIK PERINTAH ALIGHT MOTION (KHUSUS PREMIUM)
         // -----------------------------------------------------
         if (command === 'am') {
-            if (!isPremium) return reply('❌ *Akses Ditolak!*\nFitur ini khusus pengguna Premium. Silakan hubungi Owner untuk mendaftar. wa.me/6289676153775');
+            if (!isPremium) return reply('❌ *Akses Ditolak!*\nFitur ini khusus pengguna Premium. Silakan hubungi Owner untuk mendaftar.');
             
             const sub = args[1]?.toLowerCase();
 
