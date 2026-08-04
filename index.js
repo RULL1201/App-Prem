@@ -1,6 +1,7 @@
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs');
+const express = require('express'); // Modul untuk web server
 
 // Konfigurasi API
 const API = 'https://restapidhan.vercel.app';
@@ -10,6 +11,13 @@ const APIKEY = 'freeapikeydhan26';
 // KONFIGURASI NOMOR & ID
 const ownerNumber = '267173356433492'; // ID unik WhatsApp Anda
 const botPhoneNumber = '6285286080147'; // Nomor WhatsApp bot Anda (Awali dengan 62)
+// ---------------------------------------------------------
+
+// --- DUMMY SERVER AGAR RAILWAY TIDAK ME-RESTART BOT ---
+const app = express();
+const PORT = process.env.PORT || 3000;
+app.get('/', (req, res) => res.send('✅ Bot WhatsApp sedang berjalan di Cloud (Railway)!'));
+app.listen(PORT, () => console.log(`[WEB SERVER] Berjalan di port ${PORT} (Sistem Aman dari Auto-Restart)`));
 // ---------------------------------------------------------
 
 // Load Data Premium dengan aman
@@ -36,7 +44,7 @@ async function startBot() {
         auth: state,
         printQRInTerminal: false,
         logger: pino({ level: 'silent' }),
-        browser: ['Ubuntu', 'Chrome', '20.0.04'] 
+        browser: ['Ubuntu', 'Chrome', '20.0.04']
     });
 
     // Proses Pairing Code Otomatis untuk Cloud (Railway/Koyeb)
@@ -53,10 +61,11 @@ async function startBot() {
                 console.log(`\n========================================`);
                 console.log(`=> KODE PAIRING ANDA: ${code} <=`);
                 console.log(`========================================\n`);
+                console.log(`⚠️ Segera masukkan kode ini ke WhatsApp sebelum kedaluwarsa!`);
             } catch (err) {
                 console.log('Gagal meminta pairing code:', err);
             }
-        }, 3000);
+        }, 4000); // Jeda 4 detik agar sistem stabil sebelum meminta kode
     }
 
     sock.ev.on('connection.update', (update) => {
@@ -94,7 +103,7 @@ async function startBot() {
         const command = args[0]?.toLowerCase();
 
         // --- PAKSA ID ANDA MENJADI OWNER ---
-        const isOwner = senderNumber === '267173356433492';
+        const isOwner = senderNumber === ownerNumber;
         const isPremium = isOwner || premiumUsers.includes(senderJid);
 
         const reply = (textReply) => sock.sendMessage(msg.key.remoteJid, { text: textReply }, { quoted: msg });
