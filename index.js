@@ -7,9 +7,9 @@ const API = 'https://restapidhan.vercel.app';
 const APIKEY = 'freeapikeydhan26';
 
 // ---------------------------------------------------------
-// NOMOR OWNER & NOMOR BOT UNTUK PAIRING OTOMATIS DI CLOUD
-const ownerNumber = '6289676153775@s.whatsapp.net'; 
-const botPhoneNumber = '6285286080147'; // <-- Ganti dengan nomor WhatsApp bot Anda (Awali dengan 62 tanpa tanda +)
+// KONFIGURASI NOMOR
+const ownerNumber = '6289676153775'; // Cukup masukkan angkanya saja tanpa @s.whatsapp.net
+const botPhoneNumber = '6285286080147'; // Nomor WhatsApp bot Anda (Awali dengan 62)
 // ---------------------------------------------------------
 
 // Load Data Premium dengan aman
@@ -81,17 +81,27 @@ async function startBot() {
         const prefix = '.';
         if (!text.startsWith(prefix)) return;
 
-        let rawSender = msg.key.fromMe ? sock.user.id : (msg.key.participant || msg.key.remoteJid);
-        const sender = rawSender.includes(':') ? rawSender.split(':')[0] + '@s.whatsapp.net' : rawSender;
+        // --- SISTEM PEMBERSIHAN PENGIRIM (ANTI GAGAL OWNER) ---
+        let rawSender = msg.key.participant || msg.key.remoteJid || "";
+        if (msg.key.fromMe && sock.user && sock.user.id) {
+            rawSender = sock.user.id;
+        }
         
+        // Ambil murni angkanya saja (mengabaikan @s.whatsapp.net, :device_id, dll)
+        const senderNumber = rawSender.replace(/[^0-9]/g, '');
+        const senderJid = senderNumber + '@s.whatsapp.net';
+        const cleanOwner = ownerNumber.replace(/[^0-9]/g, '');
+
         const args = text.slice(prefix.length).trim().split(/\s+/);
         const command = args[0]?.toLowerCase();
 
-        const isOwner = sender === ownerNumber;
-        const isPremium = isOwner || premiumUsers.includes(sender);
+        // Cek status owner berdasarkan kecocokan angka
+        const isOwner = senderNumber === cleanOwner;
+        const isPremium = isOwner || premiumUsers.includes(senderJid);
 
         const reply = (textReply) => sock.sendMessage(msg.key.remoteJid, { text: textReply }, { quoted: msg });
 
+        // TAMPILAN MENU UTAMA
         if (command === 'menu') {
             const menuText = `╭─「 🤖 *BOT ALIGHT MOTION* 」
 │
@@ -110,12 +120,15 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
             return reply(menuText);
         }
 
+        // FITUR TAMBAH PREMIUM (KHUSUS OWNER)
         if (command === 'addprem') {
             if (!isOwner) return reply('❌ Perintah ini khusus Owner bot!');
             const target = args[1];
             if (!target) return reply('❌ Masukkan nomor target!\nContoh: `.addprem 6281234567890`');
             
-            const targetJid = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+            const targetNumber = target.replace(/[^0-9]/g, '');
+            const targetJid = targetNumber + '@s.whatsapp.net';
+            
             if (premiumUsers.includes(targetJid)) return reply('⚠️ Nomor tersebut sudah terdaftar sebagai Premium.');
             
             premiumUsers.push(targetJid);
@@ -123,12 +136,15 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
             return reply(`✅ Sukses menambahkan *${target}* ke daftar Premium.`);
         }
 
+        // FITUR HAPUS PREMIUM (KHUSUS OWNER)
         if (command === 'delprem') {
             if (!isOwner) return reply('❌ Perintah ini khusus Owner bot!');
             const target = args[1];
             if (!target) return reply('❌ Masukkan nomor target!\nContoh: `.delprem 6281234567890`');
             
-            const targetJid = target.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+            const targetNumber = target.replace(/[^0-9]/g, '');
+            const targetJid = targetNumber + '@s.whatsapp.net';
+            
             if (!premiumUsers.includes(targetJid)) return reply('⚠️ Nomor tersebut tidak ada di daftar Premium.');
             
             premiumUsers = premiumUsers.filter(user => user !== targetJid);
@@ -136,6 +152,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
             return reply(`✅ Sukses menghapus *${target}* dari daftar Premium.`);
         }
 
+        // LOGIK PERINTAH ALIGHT MOTION (KHUSUS PREMIUM)
         if (command === 'am') {
             if (!isPremium) return reply('❌ *Akses Ditolak!*\nFitur ini khusus pengguna Premium. Silakan hubungi Owner untuk mendaftar.');
             
@@ -152,7 +169,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
                     const data = await res.json();
 
                     if (data.status) {
-                        emailCache[sender] = email;
+                        emailCache[senderJid] = email;
                         reply(`✅ Magic link dikirim ke *${email}*\n\nCek email Anda, lalu salin URL-nya dan kirim:\n*.am verif <url dari email>*`);
                     } else {
                         reply(`❌ *Gagal:* ${data.error || data.message}`);
@@ -167,7 +184,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
                     return reply('❌ *Format salah!*\nContoh: `.am verif https://...`');
                 }
 
-                const email = emailCache[sender];
+                const email = emailCache[senderJid];
                 if (!email) {
                     return reply('❌ *Email tidak ditemukan.*\nKirim dulu: `.am send <email>`');
                 }
@@ -177,7 +194,7 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
                     const data = await res.json();
 
                     if (data.status) {
-                        delete emailCache[sender];
+                        delete emailCache[senderJid];
                         reply(`🎉 *BERHASIL DIAKTIFKAN!*\n\n📦 Code Order: \`${data.codeorder || '-'}\``);
                     } else {
                         reply(`❌ *Gagal:* ${data.error || data.message}`);
@@ -187,9 +204,9 @@ ${isOwner ? `├─「 👑 *MENU OWNER* 」
                 }
 
             } else if (sub === 'cancel') {
-                if (emailCache[sender]) {
-                    const email = emailCache[sender];
-                    delete emailCache[sender];
+                if (emailCache[senderJid]) {
+                    const email = emailCache[senderJid];
+                    delete emailCache[senderJid];
                     reply(`✅ Proses order untuk email *${email}* berhasil dibatalkan.`);
                 } else {
                     reply('⚠️ Tidak ada proses order yang sedang berjalan untuk akun Anda.');
